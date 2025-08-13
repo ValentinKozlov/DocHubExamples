@@ -1,0 +1,70 @@
+#  Базовое описание сущности "Technologies". Нужно учитывать, что сам Техрадар является частью ядра DocHub и формально не содержится в этой сущности. В новой версии DocHub IDE техрадар вынесен в отдельный документ "tech-radar"
+entities:
+  technologies:
+    title: Технологии
+    config:
+      root_menu: Архитектура/Технологическая  # Корневое меню представления компонентов
+    schema:
+      type: object
+      properties:
+        sections:
+          title: Секции радара
+          type: object
+          patternProperties:
+            "^[a-zA-Z][a-zA-Z0-9_-]*(\\.[a-zA-Z0-9][a-zA-Z0-9_-]*)*$":
+              type: object
+              properties:
+                title:
+                  title: Название секции
+                  type: string
+              required:
+                - title
+          additionalProperties: false
+        items:
+          title: Технологии
+          type: object
+          patternProperties:
+            "^[a-zA-Z][a-zA-Z0-9_-]*(\\.[a-zA-Z0-9][a-zA-Z0-9_-]*)*$":
+              title: Описание технологии
+              type: object
+              properties:
+                title:
+                  title: Название технологии
+                  type: string
+                link:
+                  title: URL ссылка на технологию
+                  type: string
+                section:
+                  title: Секция в которой расположена технология
+                  type: string
+                status:
+                  title: Статус в котором находится технология
+                  type: string
+                aliases: 
+                  title: Альтернативные названия технологии
+                  type: array
+                  items:
+                    type: string
+              required:
+                - title
+                - section
+                - status
+          additionalProperties: false
+      required:
+        - sections
+        - items
+      additionalProperties: true
+    menu: >
+      (
+        $config := entities.technologies.config;
+        [
+          {
+            "location": $config.root_menu& "/" & "1. Список используемых технологий",
+            "link": "entities/technologies/systems_tech_list"
+          },
+          {
+            "location": $config.root_menu& "/" & "2. Общий список технологий",
+            "link": "entities/technologies/technologies_list"
+          }
+        ]
+      )

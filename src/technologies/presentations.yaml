@@ -1,0 +1,180 @@
+# В FOSS версии DocHub сущность "Technologies" не выделена и технологический радар является частью ядра.
+# При этом в DocHub IDE сущность "Technologies" выделена и технологический радар является частью сущности.
+# Я взял эту идею и реализовал в FOSS версии DocHub для возможности управления технологиями.
+entities:
+  technologies:
+    presentations:
+      # Получаем полный список технологий описанных в DocHub
+      technologies_table_list:
+        type: table
+        headers:
+          - value: tech_id
+            text: ID технологии
+            sortable: true
+            align: left
+            width: 15%
+
+          - value: tech_title
+            text: Название
+            sortable: true
+            align: left
+            width: 20%
+            link: tech_link
+
+          - value: tech_section
+            text: Секция
+            sortable: true
+            align: left
+            width: 15%
+
+          - value: tech_status
+            text: Статус
+            sortable: true
+            align: left
+            width: 10%
+
+          - value: tech_aliases
+            text: Алиасы
+            sortable: true
+            align: left
+            width: 25%
+
+          - value: tech_description
+            text: Описание
+            sortable: false
+            align: left
+            width: 15%
+        source: dataset.technologies.tech_list
+      
+      # Выводим список технологий описанных в DocHub (работает в связке с technologies_table_list)
+      technologies_list:
+        type: markdown
+        title: Таблица технологий описанных в DocHub
+        source: templates/technologies_list.md
+
+      # Получаем список используемых в системах и компонентах технологий
+      systems_tech_table_list:
+        type: table
+        title: Таблица систем и компонент по всем технологиям
+        headers:
+          - value: tech_id
+            text: ID технологии
+            sortable: true
+            align: left
+            width: 10%
+            link: tech_link
+
+          - value: tech_title
+            text: Технологии
+            sortable: true
+            align: left
+            width: 10%
+
+          - value: sys_and_comp
+            text: "Системы и компоненты"
+            align: center
+            width: 10%
+            link: link_to_sys_and_comp
+
+          - value: tech_section
+            text: Секция
+            sortable: true
+            align: left
+            width: 15%
+
+          - value: tech_status
+            text: Статус
+            sortable: true
+            align: left
+            width: 5%
+
+          - value: tech_aliases
+            text: Алиасы
+            align: left
+            width: 20%
+
+          - value: error
+            text: Ошибка
+            align: left
+            width: 15%
+        origin: dataset.technologies.systems_tech_list # Базовый источник данных
+        source: >
+          (
+            /* Приводим сырые данные к виду для вывода в таблицу */
+            $distinct($.{
+              "tech_id": tech_id ? "✅ " & tech_id : "❌ " & sys_alias_id,
+              "tech_title": tech_title,
+              "tech_link": tech_link,
+              "tech_section": tech_section,
+              "tech_status": tech_status,
+              "tech_aliases": tech_aliases,
+              "sys_and_comp": "🔗",
+              "link_to_sys_and_comp": link_to_sys_and_comp,
+              "error": error
+            });
+          )
+
+      # Выводим список используемых в системах и компонентах технологий в DocHub (работает в связке с systems_tech_table_list)
+      systems_tech_list:
+        type: markdown
+        title: Список используемых в системах и компонентах технологий
+        source: templates/systems_tech_list.md
+
+     # Получаем список систем и компонент для конкретной технологии
+      systems_tech_table_list.filtered:
+        type: table
+        title: Таблица систем и компонент для конкретной технологии
+        params:
+          type: object
+          properties:
+            sys_alias_id:
+              type: string
+          required:
+            - sys_alias_id
+        headers:
+          - value: tech_id
+            text: ID технологии
+            sortable: true
+            align: left
+            width: 10%
+            link: tech_link
+
+          - value: sys_alias_id
+            text: Алиас технологии
+            sortable: true
+            align: left
+            width: 10%
+
+          - value: component
+            text: "Системы и компоненты"
+            sortable: true
+            align: left
+            width: 20%
+            link: link_to_component  
+
+          - value: component_entity
+            text: "Тип компонента"
+            sortable: true
+            align: left
+            width: 10%
+
+          - value: error
+            text: Ошибка
+            align: left
+            width: 15%
+        origin: dataset.technologies.systems_tech_list # Базовый источник данных
+        source: >
+          (
+            /* Приводим сырые данные к виду для вывода в таблицу */
+            $.{
+              "tech_id": tech_id ? "✅ " & tech_id : "❌ " & sys_alias_id,
+              "tech_title": tech_title,
+              "tech_link": tech_link,
+              "sys_alias_id": sys_alias_id,
+              "component": component,
+              "link_to_component": link_to_component,
+              "component_entity": component_entity,
+              "error": error
+            }[sys_alias_id=$params.sys_alias_id];
+          )
+          

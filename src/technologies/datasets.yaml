@@ -1,0 +1,79 @@
+datasets:
+  # Получаем общий список описанных в DocHub технологий
+  dataset.technologies.tech_list:
+    source: >
+      (
+        $manifest := $;
+        $tech_items := $manifest.technologies.items;
+        $tech_sections := $manifest.technologies.sections;
+        $tech_items.$spread().(
+          $tech_id := $keys()[0];
+          $tech := $.*;
+          {
+            "tech_id": $tech_id,
+            "tech_title": $tech.title,
+            "tech_link": $tech.link,
+            "tech_section": $lookup($tech_sections, $tech.section).title,
+            "tech_status": $tech.status,
+            "tech_aliases": $join($tech.aliases, ", "),
+            "tech_description": $tech.description ? $tech.description : ""
+          }
+        )
+      )
+  # Данный запрос формирует список всех технологий, используемых в системах и компонентах, с их описанием,
+  # статусом, секцией, алиасами и списком систем, где они применяются. Если технология не найдена в справочнике,
+  # выводится сообщение об ошибке.
+  dataset.technologies.systems_tech_list:
+    source: >
+      (
+        $manifest := $;
+        $components := $manifest.components;
+        $tech_items := $manifest.technologies.items;
+        $tech_sections := $manifest.technologies.sections;
+        /*В системах и компонентах указаны алиасы*/
+        $tech_aliases := $distinct($components.*.technologies);
+        $tech_aliases.$spread().(
+          $tech_alias_id := $;
+          /*Получаем из алиаса технологии идентификатор технологии*/
+          $tech_id := $map($tech_alias_id, function($tech, $i, $a){
+            $filter($tech_items.$spread(), function($v, $i, $a) {$tech in $v.*.aliases}).($keys()[0])}
+          );
+          $tech := $lookup($tech_items, $tech_id);
+          $tech_found := $tech != null;
+          /*Получаем информацию к какой секции относится технология*/
+          $tech_section := $tech_found ? $lookup($tech_sections, $tech.section).title : "";
+          /*Находим все системы и компоненты где указан алиас технологий $tech_alias_id*/
+          $systems_using_tech := $components.$sift(function($v, $k) {
+            $tech_alias_id in $v.technologies
+          });
+          
+          /*В цикле перебираем все системы и компоненты где указан алиас технологий $tech_alias_id*/
+          $systems_using_tech.$spread().(
+            $component_id := $keys()[0];
+            $component := $.*;
+            /*Если это не система, то для читаемости показываем к какой системе относится выбранный компонент*/
+            $component_name := $component.entity = "system" ? $component.title
+            : (
+                $system_id := $split($component_id, ".", 2) ~> $join('.');
+                $system := $lookup($components, $system_id);
+                $system.title & "." & $component.title
+              );
+            {
+              /*Собираем массив данных, со всеми нужными нам полями*/
+              "tech_id": $tech_id,
+              "tech_title": $tech_found ? $tech.title : "",
+              "tech_link": $tech_found ? $tech.link : "",
+              "tech_section": $tech_section,
+              "tech_status": $tech_found ? $tech.status : "",
+              "tech_aliases": $tech_found ? $join($tech.aliases, ", ") : "",
+              "component_id": $component_id,
+              "link_to_component": "/architect/components/" & $component_id,
+              "component": $component_name,
+              "component_entity": $component.entity,
+              "sys_alias_id": $tech_alias_id,
+              "link_to_sys_and_comp": "/entities/technologies/systems_tech_table_list.filtered?sys_alias_id=" & $tech_alias_id,
+              "error": $tech_found ? "" : "Технология не описана"
+            }
+          )^(tech_id);
+        );
+      )
